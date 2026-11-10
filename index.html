@@ -1070,6 +1070,7 @@ function doSignup(e) {
   currentUser = { name: name || '회원', email, provider: 'email',
                   marketingAgreed: document.getElementById('signup-agree-marketing').checked };
   saveUser(); renderAuthState(); closeModals();
+  trackEvent('sign_up', { method: 'email' });
   showToast('🎁 가입 완료! 5,000원 쿠폰(WELCOME5000)이 지급되었습니다');
 }
 function doSocialLogin(provider) {
@@ -1131,6 +1132,7 @@ function toggleWishlist(productId, event) {
     showToast('찜 목록에서 제거했습니다');
   } else {
     wishlist.push(productId);
+    if (p) trackEvent('add_to_wishlist', { item_name: p.name });
     showToast('♥ 찜 목록에 추가했습니다');
   }
   saveWishlist();
@@ -1285,6 +1287,7 @@ function handleRoute() {
       renderProductDetail(product);
       showPage('detail');
       setPageMeta('product', path, PAGE_TITLES.product(product));
+      trackEvent('view_item', { item_name: product.name, item_category: product.category });
       break;
     }
 
@@ -2221,6 +2224,7 @@ function doSearch(event) {
   if (event) event.preventDefault();
   const query = document.getElementById('search-input').value.trim();
   if (!query) { navigate('/'); return; }
+  trackEvent('search', { search_term: query });
   pendingScrollTo = 'section-all-products';
   navigate('/search/' + encodeURIComponent(query));
 }
@@ -2291,7 +2295,8 @@ handleRoute();   // 최초 진입 경로 처리 (딥링크·새로고침 대응)
 // ════════════════════════════════
 // GA4 EVENT TRACKING (텍소노미 기준)
 //   promotion_click / item_view / item_click / add_to_cart / purchase
-//   add_to_cart·purchase 호출부: addToCartFromDetail(), buyNow()
+//   search / sign_up / begin_checkout / add_to_wishlist / view_item
+//   호출부: addToCartFromDetail(), buyNow(), doSearch(), doSignup(), toggleWishlist(), handleRoute()
 // ════════════════════════════════
 function trackEvent(name, params) {
   if (typeof gtag === 'function') gtag('event', name, params);
@@ -2328,6 +2333,17 @@ function trackCardInfo(card) {
   }
   return null;
 }
+
+// begin_checkout: 장바구니에서 결제하기 클릭 (바로 구매는 purchase 이벤트로 별도 수집)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('#btn-go-checkout');
+  if (!btn) return;
+  trackEvent('begin_checkout', {
+    value:      Number(btn.dataset.cartTotal),
+    item_count: Number(btn.dataset.cartItemCount),
+    currency:   'KRW'
+  });
+});
 
 // promotion_click: 시원 할인 프로모션 배너
 document.getElementById('event-banner-summer').addEventListener('click', () => {
