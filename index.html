@@ -2285,7 +2285,7 @@ handleRoute();   // 최초 진입 경로 처리 (딥링크·새로고침 대응)
 // ════════════════════════════════
 // GA4 EVENT TRACKING (텍소노미 기준)
 //   promotion_click / item_view / item_click / add_to_cart / purchase
-//   search / sign_up / begin_checkout / add_to_wishlist / view_item / banner_click
+//   search / sign_up / begin_checkout / add_to_wishlist / view_item / banner_click / banner_view
 //   호출부: addToCartFromDetail(), buyNow(), doSearch(), doSignup(), toggleWishlist(), handleRoute()
 // ════════════════════════════════
 function trackEvent(name, params) {
@@ -2368,6 +2368,20 @@ document.addEventListener('click', (e) => {
     banner_position: Number(slide.dataset.bannerId)
   });
 });
+
+// banner_view: 히어로 배너 슬라이드가 화면에 60% 이상 보일 때 (슬라이드가 다시 보일 때마다 1회)
+if ('IntersectionObserver' in window) {
+  const bannerObserver = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      trackEvent('banner_view', {
+        banner_name:     en.target.dataset.bannerTitle,
+        banner_position: Number(en.target.dataset.bannerId)
+      });
+    });
+  }, { threshold: 0.6 });
+  document.querySelectorAll('.banner-slide').forEach(el => bannerObserver.observe(el));
+}
 
 // promotion_click: 시원 할인 프로모션 배너
 document.getElementById('event-banner-summer').addEventListener('click', () => {
